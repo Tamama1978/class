@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數位藝廊 Digital Gallery</title>
+    <!-- 使用 Tailwind CSS 進行快速排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定義字型與全域設定 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #1a1a1a; /* 深炭色背景，凸顯畫作 */
+            color: #e5e5e5;
+            overflow-x: hidden;
+        }
+
+        /* 隱藏捲軸但保留功能 (Webkit) */
+        .hide-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-track {
+            background: #2d2d2d; 
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+            background: #555; 
+            border-radius: 4px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #777; 
+        }
+
+        /* 主畫框樣式 - 模擬博物館燈光與邊框 */
+        .frame-container {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border: 12px solid #2b2b2b;
+            border-radius: 4px;
+            background-color: #000;
+            transition: all 0.5s ease;
+        }
+        
+        /* 畫作的白色襯紙效果 (Matte) */
+        .matte-board {
+            padding: 20px; /* 襯紙寬度 */
+            background-color: #fdfdfd;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 實際圖片樣式 */
+        #main-image {
+            max-height: 60vh;
+            max-width: 100%;
+            object-fit: contain;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0; /* 初始隱藏，用於淡入效果 */
+            transition: opacity 0.6s ease-in-out;
+        }
+
+        /* 縮圖樣式 */
+        .thumbnail {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+            opacity: 0.6;
+        }
+        .thumbnail:hover {
+            transform: scale(1.05);
+            opacity: 1;
+        }
+        .thumbnail.active {
+            border-color: #d4af37; /* 金色選中框 */
+            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
+
+        /* 聚光燈效果標題 */
+        .gallery-title {
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            letter-spacing: 0.2em;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- 頂部標題區 -->
+    <header class="h-16 flex items-center justify-center border-b border-gray-800 bg-black/30 backdrop-blur-sm z-10">
+        <h1 class="text-2xl md:text-3xl font-bold gallery-title text-gray-100">聖誕快樂！</h1>
+    </header>
+
+    <!-- 中間主要展示區 -->
+    <main class="flex-grow flex flex-col justify-center items-center p-4 md:p-8 relative">
+        
+        <!-- 畫框區域 -->
+        <div class="frame-container max-w-5xl w-full mx-auto" id="display-frame">
+            <div class="matte-board">
+                <img id="main-image" src="" alt="Main Gallery Display">
+            </div>
+        </div>
+
+        <!-- 畫作資訊說明 -->
+        <div class="mt-6 text-center z-10 max-w-2xl px-4 transition-opacity duration-500" id="info-panel">
+            <h2 id="art-title" class="text-xl md:text-2xl font-bold text-yellow-500 mb-2"></h2>
+            <p id="art-desc" class="text-gray-400 text-sm md:text-base leading-relaxed"></p>
+        </div>
+
+    </main>
+
+    <!-- 底部滑動預覽列 -->
+    <footer class="h-32 md:h-40 bg-gray-900 border-t border-gray-800 flex flex-col relative z-20">
+        <div class="text-xs text-gray-500 px-4 py-1">滑動以預覽 • 點擊切換</div>
+        
+        <!-- 縮圖容器 (可水平捲動) -->
+        <div class="flex-grow overflow-x-auto hide-scrollbar flex items-center px-4 space-x-4 md:space-x-6" id="thumbnail-strip">
+            <!-- JavaScript 將會自動生成這裡的內容 -->
+        </div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // *** 教師設定區 ***
+        // 請在此處修改您的圖片資料
+        // 如果您的圖片在 img 資料夾內，路徑寫法範例： './img/檔名.jpg'
+        // ==========================================
+        const artworks = [
+            {
+                id: 1,
+                // 下面這個 src 是網路範例圖，請改成您資料夾的路徑，例如: './img/student1.jpg'
+                src: './img/01.jpg',
+                title: '課表編號01',
+                description: '恭喜您抽到超精美課表1號！'
+            },
+            {
+                id: 2,
+                src: './img/02.jpg',
+                title: '課表編號02',
+                description: '恭喜您抽到超精美課表2號！'
+            },
+            {
+                id: 3,
+                src: './img/03.jpg',
+                title: '課表編號03',
+                description: '恭喜您抽到超精美課表3號！'
+            },
+            {
+                id: 4,
+                src: './img/04.jpg',
+                title: '課表編號04',
+                description: '恭喜您抽到超精美課表4號！'
+            },
+            {
+                id: 5,
+                src: './img/05.jpg',
+                title: '課表編號05',
+                description: '恭喜您抽到超精美課表5號！'
+            },
+            {
+                id: 6,
+                src: './img/06.jpg',
+                title: '課表編號06',
+                description: '恭喜您抽到超精美課表6號！'
+            },
+			{
+                id: 7,
+                src: './img/07.jpg',
+                title: '課表編號07',
+                description: '恭喜您抽到超精美課表7號！'
+            },
+			{
+                id: 8,
+                src: './img/08.jpg',
+                title: '課表編號08',
+                description: '恭喜您抽到超精美課表8號！'
+            },
+			{
+                id: 9,
+                src: './img/09.jpg',
+                title: '課表編號09',
+                description: '恭喜您抽到超精美課表9號！'
+            },
+			{
+                id: 10,
+                src: './img/10.jpg',
+                title: '課表編號10',
+                description: '恭喜您抽到超精美課表10號！'
+            },
+			{
+                id: 11,
+                src: './img/11.jpg',
+                title: '課表編號11',
+                description: '恭喜您抽到超精美課表11號！'
+            },
+			{
+                id: 12,
+                src: './img/12.jpg',
+                title: '課表編號12',
+                description: '恭喜您抽到超精美課表12號！'
+            },
+			{
+                id: 13,
+                src: './img/13.jpg',
+                title: '課表編號13',
+                description: '恭喜您抽到超精美課表13號！'
+            }
+
+        ];
+
+        // DOM 元素選取
+        const mainImage = document.getElementById('main-image');
+        const artTitle = document.getElementById('art-title');
+        const artDesc = document.getElementById('art-desc');
+        const thumbnailStrip = document.getElementById('thumbnail-strip');
+        const infoPanel = document.getElementById('info-panel');
+
+        // 初始化畫廊
+        function initGallery() {
+            // 生成縮圖
+            artworks.forEach((art, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = art.src;
+                thumb.alt = art.title;
+                thumb.className = `thumbnail h-20 md:h-28 w-32 md:w-48 object-cover rounded-md shadow-lg flex-shrink-0 bg-gray-800 ${index === 0 ? 'active' : ''}`;
+                
+                // 點擊事件
+                thumb.addEventListener('click', () => {
+                    loadArtwork(index);
+                });
+
+                thumbnailStrip.appendChild(thumb);
+            });
+
+            // 載入第一張圖
+            loadArtwork(0);
+        }
+
+        // 載入特定畫作的函式
+        function loadArtwork(index) {
+            const art = artworks[index];
+            const allThumbs = document.querySelectorAll('.thumbnail');
+
+            // 1. 更新縮圖狀態 (移除舊的 active，新增新的 active)
+            allThumbs.forEach(t => t.classList.remove('active'));
+            allThumbs[index].classList.add('active');
+
+            // 2. 讓縮圖選單自動捲動到選中的項目 (置中)
+            allThumbs[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+            // 3. 主圖片淡出效果
+            mainImage.style.opacity = 0;
+            infoPanel.style.opacity = 0.5;
+
+            // 短暫延遲後切換圖片並淡入
+            setTimeout(() => {
+                mainImage.src = art.src;
+                artTitle.textContent = art.title;
+                artDesc.textContent = art.description;
+                
+                // 圖片載入完成後再顯示，避免破圖或空白瞬間
+                mainImage.onload = () => {
+                    mainImage.style.opacity = 1;
+                    infoPanel.style.opacity = 1;
+                };
+            }, 300); // 300ms 配合 CSS 的 transition 時間
+        }
+
+        // 啟動
+        document.addEventListener('DOMContentLoaded', initGallery);
+
+    </script>
+</body>
+</html>
